@@ -15,7 +15,7 @@
 // - Tactical Nuke on a Spawner if below 50% and above 25% of its health
 // - Metal Detector if a boss, miniboss, or spawner death is imminent (predicted in > 2 and < 7 seconds)
 // - Decrease Cooldowns right before using another long-cooldown item.
-// - (Decrease Cooldown affects abilities triggered while it is active, not right before it's used)
+// - (Decrease Cooldown affects abilities triggered while it is active, not night before it's used)
 	
 // TODO purchase abilities and upgrades intelligently
 // TODO automatically update the manual script by periodically checking https://raw.githubusercontent.com/mouseas/steamSummerMinigame/master/autoPlay.js
@@ -53,26 +53,26 @@ var ENEMY_TYPE = {
 	"TREASURE":4
 }
 
-if (thingTimer){
-	window.clearInterval(thingTimer);
-}
-
 function firstRun() {
 	// disable particle effects - this drastically reduces the game's memory leak
-	if (g_Minigame !== undefined) {
-		g_Minigame.CurrentScene().DoClickEffect = function() {};
-		g_Minigame.CurrentScene().DoCritEffect = function( nDamage, x, y, additionalText ) {};
-		g_Minigame.CurrentScene().SpawnEmitter = function(emitter) {
+	if (window.g_Minigame !== undefined) {
+		window.g_Minigame.CurrentScene().DoClickEffect = function() {};
+		window.g_Minigame.CurrentScene().DoCritEffect = function( nDamage, x, y, additionalText ) {};
+		window.g_Minigame.CurrentScene().SpawnEmitter = function(emitter) {
 			emitter.emit = false;
 			return emitter;
 		}
 	}
 
 	// disable enemy flinching animation when they get hit
-	if (CEnemy !== undefined) {
-		CEnemy.prototype.TakeDamage = function() {};
-		CEnemySpawner.prototype.TakeDamage = function() {};
-		CEnemyBoss.prototype.TakeDamage = function() {};
+	if (window.CEnemy !== undefined) {
+		window.CEnemy.prototype.TakeDamage = function() {};
+		window.CEnemySpawner.prototype.TakeDamage = function() {};
+		window.CEnemyBoss.prototype.TakeDamage = function() {};
+	}
+
+	if (thingTimer !== undefined) {
+		window.clearTimeout(thingTimer);
 	}
 }
 
@@ -187,51 +187,17 @@ function goToLaneWithBestTarget() {
 			g_Minigame.CurrentScene().TryChangeTarget(lowTarget);
 		}
 		
-		
 		// Prevent attack abilities and items if up against a boss or treasure minion
-		if (targetIsTreasureOrBoss) {
-			// Morale
-			disableAbility(ABILITIES.MORALE_BOOSTER);
-			// Luck
-			disableAbility(ABILITIES.GOOD_LUCK);
-			// Nuke
-			disableAbility(ABILITIES.NUKE);
-			// Clusterbomb
-			disableAbility(ABILITIES.CLUSTER_BOMB);
-			// Napalm
-			disableAbility(ABILITIES.NAPALM);
-			// Crit
-			disableAbilityItem(ITEMS.CRIT);
-			// Cripple Spawner
-			disableAbilityItem(ITEMS.CRIPPLE_SPAWNER);
-			// Cripple Monster
-			disableAbilityItem(ITEMS.CRIPPLE_MONSTER);
-			// Max Elemental Damage
-			disableAbilityItem(ITEMS.MAXIMIZE_ELEMENT);
-			// Reflect Damage
-			disableAbilityItem(ITEMS.REFLECT_DAMAGE);
-		} else {
-			// Morale
-			enableAbility(ABILITIES.MORALE_BOOSTER);
-			// Luck
-			enableAbility(ABILITIES.GOOD_LUCK);
-			// Nuke
-			enableAbility(ABILITIES.NUKE);
-			// Clusterbomb
-			enableAbility(ABILITIES.CLUSTER_BOMB);
-			// Napalm
-			enableAbility(ABILITIES.NAPALM);
-			// Crit
-			enableAbilityItem(ITEMS.CRIT);
-			// Cripple Spawner
-			enableAbilityItem(ITEMS.CRIPPLE_SPAWNER);
-			// Cripple Monster
-			enableAbilityItem(ITEMS.CRIPPLE_MONSTER);
-			// Max Elemental Damage
-			enableAbilityItem(ITEMS.MAXIMIZE_ELEMENT);
-			// Reflect Damage
-			enableAbilityItem(ITEMS.REFLECT_DAMAGE);
-		}
+		setAbility(ABILITIES.MORALE_BOOSTER, !targetIsTreasureOrBoss); // Morale
+		setAbility(ABILITIES.GOOD_LUCK, !targetIsTreasureOrBoss); // Luck
+		setAbility(ABILITIES.NUKE, !targetIsTreasureOrBoss); // Nuke
+		setAbility(ABILITIES.CLUSTER_BOMB, !targetIsTreasureOrBoss); // Clusterbomb
+		setAbility(ABILITIES.NAPALM, !targetIsTreasureOrBoss); // Napalm
+		setAbilityItem(ITEMS.CRIT, !targetIsTreasureOrBoss); // Crit
+		setAbilityItem(ITEMS.CRIPPLE_SPAWNER, !targetIsTreasureOrBoss); // Cripple Spawner
+		setAbilityItem(ITEMS.CRIPPLE_MONSTER, !targetIsTreasureOrBoss); // Cripple Monster
+		setAbilityItem(ITEMS.MAXIMIZE_ELEMENT, !targetIsTreasureOrBoss); // Max Elemental Damage
+		setAbilityItem(ITEMS.REFLECT_DAMAGE, !targetIsTreasureOrBoss); // Reflect Damage
 	}
 }
 
@@ -436,21 +402,11 @@ function triggerAbility(abilityId) {
 	}
 }
 
-function toggleAbilityVisibility(abilityId, show) {
-    var vis = show === true ? "visible" : "hidden";
-
-    var elem = document.getElementById('ability_' + abilityId);
-    if (elem && elem.childElements() && elem.childElements().length >= 1) {
-        elem.childElements()[0].style.visibility = vis;
-    }
-}
-
-function disableAbility(abilityId) {
-    toggleAbilityVisibility(abilityId, false);
-}
-
-function enableAbility(abilityId) {
-    toggleAbilityVisibility(abilityId, true);
+function setAbility(abilityId, enabled) {
+	var elem = document.getElementById('ability_' + abilityId);
+	if (elem && elem.childElements() && elem.childElements().length >= 1) {
+		elem.childElements()[0].style.visibility = enabled ? "visible" : "hidden";
+	}
 }
 
 function isAbilityEnabled(abilityId) {
@@ -461,21 +417,11 @@ function isAbilityEnabled(abilityId) {
 	return false;
 }
 
-function toggleAbilityItemVisibility(abilityId, show) {
-    var vis = show === true ? "visible" : "hidden";
-
-    var elem = document.getElementById('abilityitem_' + abilityId);
-    if (elem && elem.childElements() && elem.childElements().length >= 1) {
-        elem.childElements()[0].style.visibility = show;
-    }
-}
-
-function disableAbilityItem(abilityId) {
-    toggleAbilityItemVisibility(abilityId, false);
-}
-
-function enableAbilityItem(abilityId) {
-    toggleAbilityItemVisibility(abilityId, true);
+function setAbilityItem(abilityId, enabled) {
+	var elem = document.getElementById('abilityitem_' + abilityId);
+	if (elem && elem.childElements() && elem.childElements().length >= 1) {
+		elem.childElements()[0].style.visibility = enabled ? "visible" : "hidden";
+	}
 }
 
 function isAbilityItemEnabled(abilityId) {
